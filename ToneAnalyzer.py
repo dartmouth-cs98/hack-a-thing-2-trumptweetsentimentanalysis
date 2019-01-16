@@ -1,9 +1,8 @@
-import json
 from watson_developer_cloud import ToneAnalyzerV3
+from collections import Counter
+from dateutil import parser
 
 import json
-import sys
-from dateutil import parser
 import datetime
 import requests
 import twitter
@@ -19,10 +18,12 @@ CONSUMER_KEY = 'i4ZrOiOLqZ2gKwu0r76FvhB7z'
 CONSUMER_SECRET = '70ssfAJraZ1s8qx0nkGxLohXWQkGvZD00n5w0sL71w1m8HSLxs'
 
 # helper function to get all tweets up to max allowed 3,200
+# currently returning 200 most recent tweets
 def get_tweets(api=None, screen_name=None):
     timeline = api.GetUserTimeline(screen_name=screen_name, count=200)
     earliest_tweet = min(timeline, key=lambda x: x.id).id
-    print("getting tweets before:", earliest_tweet)
+    # print("getting tweets before:", earliest_tweet)
+    print('Getting 200 most recent tweets \n')
 
     while True:
         tweets = api.GetUserTimeline(
@@ -56,35 +57,46 @@ tone_analyzer = ToneAnalyzerV3(
     iam_apikey='n54NtzfmzFug46PryonqHU9sGWWaGKcT_vQ_zQhOvdrR',
     url='https://gateway.watsonplatform.net/tone-analyzer/api'
 )
+first_tweet = 0
+earliest_date = ''
+recent_date = ''
 
-# add tweets and sentiment to
+# add tweets and sentiment to dictionary
 for tweet in timeline:
 
     dt = parser.parse(tweet._json['created_at'])
     date = datetime.datetime.strptime(str(dt.day) + str(dt.month) + str(dt.year), '%d%m%Y').date()
-    # print(date)
-    # print(tweet._json['full_text'])
 
-    # tone_analysis = tone_analyzer.tone(
-    #     {'text': tweet._json['full_text']},
-    #     'application/json'
-    # ).get_result()
+    if first_tweet == 0:
+        recent_date = date
+        first_tweet = 1
+
+    earliest_date = date
+
+    # IBM Watson tone analysis on each tweet
+    tone_analysis = tone_analyzer.tone(
+        {'text': tweet._json['full_text']},
+        'application/json',
+        False
+    ).get_result()
+
+    if len(tone_analysis['document_tone']['tones']) == 0:
+        continue
+
+    print('Detected sentiment ' + tone_analysis['document_tone']['tones'][0]['tone_name'] + ' in tweet')
 
     if str(date) not in trump_tweets:
-        trump_tweets[str(date)] = [[tweet._json['full_text']]]
+        trump_tweets[str(date)] = [[tone_analysis['document_tone']['tones'][0]['tone_name']]]
+        # trump_tweets[str(date)] = [[tweet._json['full_text']]]
     else:
-        trump_tweets[str(date)][0].append(tweet._json['full_text'])
-
-# tone_analysis = tone_analyzer.tone(
-#         {'text': tweet._json['full_text']},
-#         'application/json',
-#         False
-#     ).get_result()
-# print(tone_analysis['document_tone']['tones'][0]['tone_name'])
-#
-# url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=SPX&outputsize=full&apikey=1TTCW4N7SLIUCIWS"
+        # trump_tweets[str(date)][0].append(tweet._json['full_text'])
+        trump_tweets[str(date)][0].append(tone_analysis['document_tone']['tones'][0]['tone_name'])
 
 
+# pulling historic S&P 500 data
+url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=SPX&outputsize=full&apikey=1TTCW4N7SLIUCIWS"
+
+print('pulling historic stock prices')
 
 stockResponse = requests.get(url)
 jData = json.loads(stockResponse.content)
@@ -96,7 +108,28 @@ for date in jData['Time Series (Daily)']:
         close = jData['Time Series (Daily)'][date]['4. close']
         dated_tweets.append(float(open)-float(close))
 
-print(trump_tweets)
+print('\n')
+print(trump_tweets.keys())
+print('\n')
 
-# print(jData['Time Series (Daily)']['2017-06-23'])
+# user input - enter date from the printed list to find most common sentiment for the day and S&P 500 close
+while True:
+    date = input("Please enter a date from the above printed list to find most common "
+                 "Trump tweet sentiment or leave a blank line to quit: ")
+    if not date: break
 
+    if date not in trump_tweets:
+        print('No tweets from trump on ' + str(date) + ' :/')
+
+    elif len(trump_tweets[date]) == 1:
+
+        data = Counter(trump_tweets[date][0])
+        print('Trump sentiment for the day was ' + data.most_common(1)[0][0] + ' but markets were closed')
+
+    else:
+
+        data = Counter(trump_tweets[date][0])
+        if trump_tweets[date][1] >= 0:
+            print('Trump sentiment for the day was ' + data.most_common(1)[0][0] + ' and S&P 500 closed up $' + str("%.2f" % trump_tweets[date][1]))
+        else:
+            print('Trump sentiment for the day was ' + data.most_common(1)[0][0] + ' and S&P 500 closed down $' + str("%.2f" % trump_tweets[date][1]))
