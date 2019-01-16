@@ -50,40 +50,39 @@ api = twitter.Api(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN_KEY, ACCESS_TOKEN_
 screen_name = 'realDonaldTrump'
 timeline = get_tweets(api=api, screen_name=screen_name)
 
+# create ToneAnalyzer IBM Watson object
+tone_analyzer = ToneAnalyzerV3(
+    version='2017-09-21',
+    iam_apikey='n54NtzfmzFug46PryonqHU9sGWWaGKcT_vQ_zQhOvdrR',
+    url='https://gateway.watsonplatform.net/tone-analyzer/api'
+)
+
 # add tweets and sentiment to
 for tweet in timeline:
 
     dt = parser.parse(tweet._json['created_at'])
     date = datetime.datetime.strptime(str(dt.day) + str(dt.month) + str(dt.year), '%d%m%Y').date()
-    print(date)
-    print(tweet._json['full_text'])
+    # print(date)
+    # print(tweet._json['full_text'])
+
+    # tone_analysis = tone_analyzer.tone(
+    #     {'text': tweet._json['full_text']},
+    #     'application/json'
+    # ).get_result()
+
     if str(date) not in trump_tweets:
         trump_tweets[str(date)] = [[tweet._json['full_text']]]
     else:
         trump_tweets[str(date)][0].append(tweet._json['full_text'])
 
-# print(trump_tweets)
-
+# tone_analysis = tone_analyzer.tone(
+#         {'text': tweet._json['full_text']},
+#         'application/json',
+#         False
+#     ).get_result()
+# print(tone_analysis['document_tone']['tones'][0]['tone_name'])
 #
-# # create ToneAnalyzer IBM Watson object
-# tone_analyzer = ToneAnalyzerV3(
-#     version='2017-09-21',
-#     iam_apikey='n54NtzfmzFug46PryonqHU9sGWWaGKcT_vQ_zQhOvdrR',
-#     url='https://gateway.watsonplatform.net/tone-analyzer/api'
-# )
-#
-# text =
-
-
-#
-# text = '' 
-# text2 = "we are very sad." # # tone_analysis = tone_analyzer.tone( 
-#     {'text': text}, 
-#     'application/json', 
-#  ).get_result()
-#  # print(json.dumps(tone_analysis, indent=2))
-#
-url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=SPX&outputsize=full&apikey=1TTCW4N7SLIUCIWS"
+# url = "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=SPX&outputsize=full&apikey=1TTCW4N7SLIUCIWS"
 
 
 
