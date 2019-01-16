@@ -1,7 +1,7 @@
 # hack-a-thing-2-trumptweetsentimentanalysis
 hack-a-thing-2-trumptweetsentimentanalysis created by GitHub Classroom
 
-Trump Tweets is a side-project I made based on a hunch that the tweets of President Trump has an effect on the stock market. For this project, I used the python-twitter api, IBM Watson Tone Analyzer api, and AlphaVantage Stock api. The program will first pull the 200 most recent tweets from Donald Trump's account. Next, it analyzes the tone of each of these tweets and adds them to a dictionary containing the tones of all the tweets for that day. Finally, it pulls historic stock price information for the S&P 500 and calculates the day's price change. The `trump_tweets` dictionary contains the following structure:
+Trump Tweets is a project I made based on a hunch that the tweets of President Trump has an effect on the stock market. For this project, I used the python-twitter api, IBM Watson Tone Analyzer api, and AlphaVantage Stock api. The program will first pull the 200 most recent tweets from Donald Trump's account. Next, it analyzes the tone of each of these tweets and adds them to a dictionary containing the tones of all the tweets for that day. Finally, it pulls historic stock price information for the S&P 500 and calculates the day's price change. The `trump_tweets` dictionary contains the following structure:
 
 `trump_tweets[date] = {[[tones for all the days tweets in a list], S&P 500 price change]}`
 
